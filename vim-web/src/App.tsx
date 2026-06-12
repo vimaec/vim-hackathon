@@ -79,6 +79,16 @@ export function App() {
           return
         }
         currentVimRef.current = vim
+
+        // The viewer's showRooms setting defaults to off, but it is only applied
+        // on visibility operations — freshly loaded rooms start visible. Hide them
+        // here unless the user has turned rooms on in the settings panel.
+        if (!viewer.renderSettings.showRooms.get()) {
+          for (const el of vim.getAllElements()) {
+            if (el.isRoom) el.visible = false
+          }
+        }
+
         setStatus('')
       } catch {
         if (!cancelled) setStatus('Failed to load model.')
