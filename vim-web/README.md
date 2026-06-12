@@ -30,8 +30,14 @@ npm run dev
 
 Vite will print a local URL (usually <http://localhost:5173>). Open it in your browser.
 The nav bar across the top has a button for every `.vim` file in the repo's `vims/`
-folder — click one and it loads and frames itself. Left-drag to orbit, right-drag to
-pan, scroll to zoom, and click an element to isolate it.
+folder — click one and it loads and frames itself — plus an **Open…** button to load a
+`.vim` file straight from your disk. Left-drag to orbit, right-drag to pan, scroll to
+zoom, and click an element to isolate it.
+
+The pane on the left is a custom inspector that replaces the viewer's built-in BIM
+panels: a tree grouping every physical element by Category > Family > Type (click a row
+to select and frame it), and a Parameters section showing the BIM properties of the
+current selection.
 
 ## Adding models
 
@@ -51,8 +57,9 @@ A small Vite dev-server plugin in `vite.config.ts` exposes the root `vims/` fold
 - `GET /vims/<file>.vim` → streams that file (path-traversal is blocked).
 
 On load, the front-end (`src/App.tsx`) fetches `/api/vims`, builds the nav bar, and
-calls `viewer.load({ url })` with the server-provided URL. To serve from a different
-location, change `VIMS_DIR` in `vite.config.ts`.
+hands the chosen model's server-provided URL to `src/CustomInspector.tsx`, which calls
+`viewer.load({ url })`. To serve from a different location, change `VIMS_DIR` in
+`vite.config.ts`.
 
 ## Project layout
 
@@ -64,14 +71,17 @@ vim-web/
 ├── tsconfig.json        # TypeScript config
 ├── vite.config.ts       # Vite + React plugin + the vims/ serving plugin
 └── src/
-    ├── main.tsx         # React entry point; imports vim-web's stylesheet
-    ├── App.tsx          # Nav bar + viewer: lists models and loads them  ← start here
+    ├── main.tsx             # React entry point; imports vim-web's stylesheet
+    ├── App.tsx              # Nav bar: lists models, Open… for local files
+    ├── CustomInspector.tsx  # The viewer + custom inspector tree  ← start here
+    ├── elementDomain.ts     # Element-domain filtering (port of vim-format's ElementDomain.cs)
     └── vite-env.d.ts
 ```
 
 ## The viewer API in 4 lines
 
-The entire integration lives in `src/App.tsx`:
+The viewer integration lives in `src/CustomInspector.tsx` (`App.tsx` only decides
+*which* model to load):
 
 ```ts
 const viewer = await VIM.React.Webgl.createViewer(container)  // mount into a <div>
@@ -101,8 +111,9 @@ feature.
 You're already in a Claude Code-friendly project. Some things to try asking:
 
 - "Add a button that toggles a section box on the model."
-- "Show the BIM properties of whatever element I click in a side panel."
+- "Group the inspector tree by Room first." (one-line change: `GROUPING_ORDER` in
+  `src/CustomInspector.tsx`)
 - "Load two models side by side."
 
-Claude can read `src/App.tsx` and the `vim-web` type definitions in `node_modules` to
+Claude can read the `src/` files and the `vim-web` type definitions in `node_modules` to
 discover the exact API surface, so run `npm install` first for the best results.

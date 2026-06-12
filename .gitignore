@@ -1,2 +1,4 @@
 .claude/settings.local.json
 .DS_Store
+vim-flex/vimflex.plugins.json
+vim-flex/.backup*

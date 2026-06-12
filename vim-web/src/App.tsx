@@ -1,10 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import * as VIM from 'vim-web'
-
-// Types inferred from the factory so we don't depend on named exports.
-type Viewer = Awaited<ReturnType<typeof VIM.React.Webgl.createViewer>>
-type LoadRequest = ReturnType<Viewer['load']>
-type Vim = Awaited<ReturnType<LoadRequest['getVim']>>
+import { CSSProperties, ChangeEvent, useEffect, useRef, useState } from 'react'
+import { CustomInspector, ModelSource } from './CustomInspector'
 
 // One available model, as reported by the dev server's /api/vims endpoint.
 interface Model {
@@ -13,28 +8,20 @@ interface Model {
 }
 
 export function App() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const currentVimRef = useRef<Vim | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [viewer, setViewer] = useState<Viewer | null>(null)
   const [models, setModels] = useState<Model[]>([])
-  const [selected, setSelected] = useState('')
+  // What the inspector loads. Kept as a stable object — a new identity
+  // triggers a reload, so it's only replaced on an explicit user choice.
+  const [source, setSource] = useState<ModelSource>()
+  const [activeUrl, setActiveUrl] = useState('') // nav button highlight; '' when a local file is open
+  const [fileName, setFileName] = useState<string>() // name of the locally opened file, if any
   const [status, setStatus] = useState('Starting…')
 
-  // Create the viewer and fetch the list of available models, once on mount.
+  // Fetch the list of available models once on mount. The viewer itself is
+  // owned by CustomInspector, which loads whatever source we pass it.
   useEffect(() => {
     let cancelled = false
-    let created: Viewer | undefined
-
-    VIM.React.Webgl.createViewer(containerRef.current ?? undefined).then((v) => {
-      if (cancelled) {
-        v.dispose()
-        return
-      }
-      created = v
-      v.isolation.autoIsolate.set(true) // isolate the clicked element, ghost the rest
-      setViewer(v)
-    })
 
     fetch('/api/vims')
       .then((res) => res.json() as Promise<Model[]>)
@@ -42,9 +29,12 @@ export function App() {
         if (cancelled) return
         setModels(list)
         if (list.length > 0) {
-          setSelected(list[0].url) // auto-select the first model
+          // Auto-select the first model.
+          setActiveUrl(list[0].url)
+          setSource({ url: list[0].url })
+          setStatus('')
         } else {
-          setStatus('No .vim files found. Drop one into the vims/ folder and reload.')
+          setStatus('No .vim files found. Drop one into the vims/ folder, or use Open…')
         }
       })
       .catch(() => {
@@ -53,59 +43,38 @@ export function App() {
 
     return () => {
       cancelled = true
-      created?.dispose()
     }
   }, [])
 
-  // (Re)load whenever the viewer is ready and the selection changes.
-  useEffect(() => {
-    if (!viewer || !selected) return
-    let cancelled = false
-    let request: LoadRequest | null = null
+  const selectModel = (m: Model) => {
+    setFileName(undefined)
+    setActiveUrl(m.url)
+    setSource({ url: m.url })
+  }
 
-    const load = async () => {
-      // Remove the previously loaded model before loading the next.
-      if (currentVimRef.current) {
-        viewer.unload(currentVimRef.current)
-        currentVimRef.current = null
-      }
-
-      setStatus('Loading…')
-      request = viewer.load({ url: selected }) // shows a progress modal and auto-frames
-      try {
-        const vim = await request.getVim()
-        if (cancelled) {
-          viewer.unload(vim)
-          return
-        }
-        currentVimRef.current = vim
-
-        // The viewer's showRooms setting defaults to off, but it is only applied
-        // on visibility operations — freshly loaded rooms start visible. Hide them
-        // here unless the user has turned rooms on in the settings panel.
-        if (!viewer.renderSettings.showRooms.get()) {
-          for (const el of vim.getAllElements()) {
-            if (el.isRoom) el.visible = false
-          }
-        }
-
+  // Read the chosen .vim file from disk and hand it to the inspector as a buffer.
+  const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
+    const input = e.target
+    const file = input.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const buffer = event.target?.result
+      if (buffer instanceof ArrayBuffer) {
+        setFileName(file.name)
+        setActiveUrl('')
+        setSource({ buffer })
         setStatus('')
-      } catch {
-        if (!cancelled) setStatus('Failed to load model.')
       }
     }
-
-    load()
-
-    return () => {
-      cancelled = true
-      request?.abort()
-    }
-  }, [viewer, selected])
+    reader.readAsArrayBuffer(file)
+    // Clear the value so picking the same file again still fires `change`.
+    input.value = ''
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
-      {/* Top-level nav bar: one button per available model. */}
+      {/* Top-level nav bar: one button per available model, plus Open…. */}
       <nav
         style={{
           display: 'flex',
@@ -125,37 +94,49 @@ export function App() {
           {models.length === 0 ? (
             <span style={{ opacity: 0.7 }}>No .vim files in the vims/ folder</span>
           ) : (
-            models.map((m) => {
-              const active = m.url === selected
-              return (
-                <button
-                  key={m.url}
-                  onClick={() => setSelected(m.url)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 6,
-                    border: '1px solid transparent',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    color: '#fff',
-                    background: active ? '#3e9bff' : 'rgba(255, 255, 255, 0.1)',
-                    fontWeight: active ? 600 : 400,
-                  }}
-                >
-                  {m.name}
-                </button>
-              )
-            })
+            models.map((m) => (
+              <button
+                key={m.url}
+                onClick={() => selectModel(m)}
+                style={navButtonStyle(m.url === activeUrl)}
+              >
+                {m.name}
+              </button>
+            ))
           )}
+
+          {/* Open a .vim file from disk. While one is loaded, its name shows
+              as the active chip (the hidden input has no UI of its own). */}
+          <input ref={fileInputRef} type="file" accept=".vim" onChange={handleFile} style={{ display: 'none' }} />
+          <button onClick={() => fileInputRef.current?.click()} style={navButtonStyle(false)}>
+            Open…
+          </button>
+          {fileName && <span style={{ ...navButtonStyle(true), cursor: 'default' }}>{fileName}</span>}
         </div>
 
         {status && <span style={{ marginLeft: 'auto', opacity: 0.8 }}>{status}</span>}
       </nav>
 
-      {/* Viewer fills the remaining space below the nav bar. */}
+      {/* Inspector + viewer fill the remaining space below the nav bar.
+          CustomInspector positions itself with absolute inset-0, so this
+          wrapper must be position: relative. */}
       <main style={{ position: 'relative', flex: 1, minHeight: 0 }}>
-        <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+        <CustomInspector source={source} />
       </main>
     </div>
   )
+}
+
+// Nav chip styling, shared by the model buttons, Open…, and the file-name chip.
+function navButtonStyle(active: boolean): CSSProperties {
+  return {
+    padding: '6px 12px',
+    borderRadius: 6,
+    border: '1px solid transparent',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    color: '#fff',
+    background: active ? '#3e9bff' : 'rgba(255, 255, 255, 0.1)',
+    fontWeight: active ? 600 : 400,
+  }
 }
