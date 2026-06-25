@@ -1,6 +1,38 @@
-# Hackathon VIM
+# VIM Hackathon
 
-*English version below — la version anglaise suit.*
+*French version below — la version française suit.*
+
+A starter workspace for building BIM tools on top of `.vim` files — 3D building models exported from Revit, Navisworks, or IFC. Everything here is set up so you (and Claude Code) can go from zero to a working prototype quickly.
+
+The goal of the hackathon: pick a building-industry workflow you care about — see [`IDEAS.md`](IDEAS.md) for starting points like model health, issue tracking, costing, scheduling, carbon analysis, facility management, or presentation fly-throughs — and build it on one of the two avenues below.
+
+## Two avenues
+
+| | **VIM Flex plugins** (`vim-flex/`) | **VIM Web viewer** (`vim-web/`) |
+|---|---|---|
+| What you build | Plugins for VIM Flex, a native Windows 3D BIM viewer: custom workflows, dockable panels, analytics | A browser-based 3D viewer app using the `vim-web` npm package |
+| Stack | AngelScript, ImGui, DuckDB SQL | TypeScript, React, Vite, WebGL |
+| Good fit if you want | Rich BIM analytics over SQL, deep viewer integration, agent-driven development (compile/query via MCP) | Web UI freedom, shareable in a browser, a familiar React workflow |
+| Start here | [`vim-flex/README.md`](vim-flex/README.md) | [`vim-web/README.md`](vim-web/README.md) |
+
+Both avenues read the same models and expose the same underlying BIM data: elements (walls, doors, ducts, rooms, ...) with categories, families and types, levels, rooms, worksets, and warnings.
+
+## Sample models
+
+The [`vims/`](vims/) folder ships with four sample models — Snowdon, a Substation, and two versions of the Wolford Residence (handy for model-comparison ideas). Open them directly in VIM Flex, or run the vim-web dev server and they appear in the model picker automatically. To add your own, drop a `.vim` file into `vims/` — see [`vims/README.md`](vims/README.md) for exporters and hosted samples.
+
+## Prerequisites
+
+- **VIM Flex avenue**: install [VIM Flex](https://vimaec.com/download) (Windows). For agent-driven development, enable Developer Mode (Settings > Developer Settings) and launch with `--start-mcp-server=true`.
+- **VIM Web avenue**: Node.js 18+ and npm.
+
+## Building with Claude Code
+
+This repo is Claude Code-ready: `CLAUDE.md` files at the root and in each avenue give Claude the orientation, dev loops, and gotchas it needs, and `vim-flex/.claude/` ships project skills and specialized agents for BIM queries, plugin development, debugging, and report design. Open a session in the folder you're working in and describe what you want to build.
+
+---
+
+# Hackathon VIM
 
 Un espace de travail de démarrage pour créer des outils BIM à partir de fichiers `.vim` — des maquettes 3D de bâtiments exportées depuis Revit, Navisworks ou IFC. Tout est déjà configuré pour que vous (et Claude Code) passiez de zéro à un prototype fonctionnel rapidement.
 
@@ -30,34 +62,5 @@ Le dossier [`vims/`](vims/) contient quatre maquettes d'exemple — Snowdon, un 
 
 Ce dépôt est prêt pour Claude Code : des fichiers `CLAUDE.md` à la racine et dans chaque avenue donnent à Claude l'orientation, les boucles de développement et les pièges à connaître, et `vim-flex/.claude/` fournit des compétences (skills) et des agents spécialisés pour les requêtes BIM, le développement de plugins, le débogage et la conception de rapports. Ouvrez une session dans le dossier où vous travaillez et décrivez ce que vous voulez créer.
 
----
 
-# VIM Hackathon
 
-A starter workspace for building BIM tools on top of `.vim` files — 3D building models exported from Revit, Navisworks, or IFC. Everything here is set up so you (and Claude Code) can go from zero to a working prototype quickly.
-
-The goal of the hackathon: pick a building-industry workflow you care about — see [`IDEAS.md`](IDEAS.md) for starting points like model health, issue tracking, costing, scheduling, carbon analysis, facility management, or presentation fly-throughs — and build it on one of the two avenues below.
-
-## Two avenues
-
-| | **VIM Flex plugins** (`vim-flex/`) | **VIM Web viewer** (`vim-web/`) |
-|---|---|---|
-| What you build | Plugins for VIM Flex, a native Windows 3D BIM viewer: custom workflows, dockable panels, analytics | A browser-based 3D viewer app using the `vim-web` npm package |
-| Stack | AngelScript, ImGui, DuckDB SQL | TypeScript, React, Vite, WebGL |
-| Good fit if you want | Rich BIM analytics over SQL, deep viewer integration, agent-driven development (compile/query via MCP) | Web UI freedom, shareable in a browser, a familiar React workflow |
-| Start here | [`vim-flex/README.md`](vim-flex/README.md) | [`vim-web/README.md`](vim-web/README.md) |
-
-Both avenues read the same models and expose the same underlying BIM data: elements (walls, doors, ducts, rooms, ...) with categories, families and types, levels, rooms, worksets, and warnings.
-
-## Sample models
-
-The [`vims/`](vims/) folder ships with four sample models — Snowdon, a Substation, and two versions of the Wolford Residence (handy for model-comparison ideas). Open them directly in VIM Flex, or run the vim-web dev server and they appear in the model picker automatically. To add your own, drop a `.vim` file into `vims/` — see [`vims/README.md`](vims/README.md) for exporters and hosted samples.
-
-## Prerequisites
-
-- **VIM Flex avenue**: install [VIM Flex](https://vimaec.com/download) (Windows). For agent-driven development, enable Developer Mode (Settings > Developer Settings) and launch with `--start-mcp-server=true`.
-- **VIM Web avenue**: Node.js 18+ and npm.
-
-## Building with Claude Code
-
-This repo is Claude Code-ready: `CLAUDE.md` files at the root and in each avenue give Claude the orientation, dev loops, and gotchas it needs, and `vim-flex/.claude/` ships project skills and specialized agents for BIM queries, plugin development, debugging, and report design. Open a session in the folder you're working in and describe what you want to build.
