@@ -63,6 +63,13 @@ export type ElementDomain =
  * @param elements All element table rows (`doc.element.getAll()`).
  * @param categories All category table rows (`doc.category.getAll()`).
  * @param isVisibleIn3dView Whether the element at the given index is visible in a 3D view.
+ *
+ * NOTE: callers currently approximate `isVisibleIn3dView` with "has geometry in the scene"
+ * (see CustomInspector). That is a reasonable stand-in but is NOT the same signal as Revit's
+ * `IsVisibleInRevit3dView`, so the PhysicalVisible/PhysicalHidden split can be approximate.
+ * Once vim-format surfaces `element.domain` (plus isInstance / elementKind) natively on the
+ * web-readable element table, this whole port can be replaced by a direct read of the
+ * authoritative domain rather than this client-side re-derivation.
  */
 export async function getElementDomains (
   doc: VimDocument,

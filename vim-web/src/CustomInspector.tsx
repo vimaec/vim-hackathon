@@ -528,6 +528,12 @@ function buildRoomGeometry (element: VIM.Core.Webgl.IElement3D): VIM.THREE.Buffe
  * AND whose element domain is in {@link SHOWN_DOMAINS} are included, so every
  * leaf is a physical, selectable element in the scene. Also returns that
  * filtered element-index set so the caller can sync scene visibility to it.
+ *
+ * NOTE: the has-geometry gate is a RENDERABILITY filter (leaves must be clickable
+ * in 3D) — it is NOT the physical-element rule. It under-counts real elements that
+ * have no mesh (e.g. 2D door families, ~150 of ~1,000 doors in the sample models).
+ * For a true physical-element count or list, filter by `domain` / SHOWN_DOMAINS
+ * only, WITHOUT the geometry gate.
  */
 async function buildInspectorTree (vim: IWebglVim): Promise<{ tree: TreeItem[]; shownElements: ReadonlySet<number> }> {
   const doc = vim.bim
@@ -582,6 +588,9 @@ async function buildInspectorTree (vim: IWebglVim): Promise<{ tree: TreeItem[]; 
   // Restrict to elements that actually have geometry — these are the ones a
   // user can click and see in the scene. `getAllElements()` returns the 3D
   // elements; we group their underlying BIM rows.
+  // NOTE: this is a RENDERABILITY filter, not the physical-element rule. It drops
+  // real elements with no mesh (e.g. 2D door families). Do NOT reuse this set as
+  // "all physical elements" for counts — count by `domain` / SHOWN_DOMAINS instead.
   const geometryIndices = new Set(vim.getAllElements().filter((e) => e.hasGeometry).map((e) => e.element))
 
   // Classify every element row into its domain (Conceptual, PhysicalVisible,
