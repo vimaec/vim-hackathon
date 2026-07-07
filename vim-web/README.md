@@ -35,7 +35,8 @@ folder — click one and it loads and frames itself — plus an **Open…** butt
 zoom, and click an element to isolate it.
 
 The pane on the left is a custom inspector that replaces the viewer's built-in BIM
-panels: a tree grouping every physical element by Category > Family > Type (click a row
+panels: a tree grouping every physical element that has geometry (i.e. renderable in the
+3D scene) by Category > Family > Type (click a row
 to select and frame it), and a Parameters section showing the BIM properties of the
 current selection.
 
